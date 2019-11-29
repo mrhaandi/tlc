@@ -1078,6 +1078,7 @@ End Instances.
 (* ********************************************************************** *)
 (** * Boolean comparison *)
 
+Module BooleanComparison.
 Open Scope comp_scope.
 
 (** Additional notation for reflected boolean comparison.
@@ -1092,6 +1093,7 @@ Notation "x ''<' y" := (isTrue (@lt _ _ x y))
 Notation "x ''>' y" := (isTrue (@gt _ _ x y))
   (at level 70, no associativity) : comp_scope_reflect.
 
+End BooleanComparison.
 
 
 (* ********************************************************************** *)
