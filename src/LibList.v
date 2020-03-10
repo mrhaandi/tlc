@@ -27,7 +27,10 @@ Inductive list (A : Type) : Type :=
 Arguments nil {A}.
 Arguments cons {A}.
 
-Declare Scope liblist_scope.
+(* Hack for v8.9, lack of Declare Scope. *)
+Inductive create_liblist_scope.
+Notation "'create_liblist_scope'" := create_liblist_scope : liblist_scope.
+
 Open Scope liblist_scope.
 Delimit Scope liblist_scope with list.
 Bind Scope liblist_scope with list.
@@ -127,6 +130,8 @@ Definition app A (l1 l2 : list A) :=
 (** [l1 ++ l2] concatenates two lists *)
 
 Infix "++" := app (right associativity, at level 60) : liblist_scope.
+Close Scope list_scope.
+Open Scope liblist_scope.
 
 (** [l & x] extends the list [l] with the value [x] at the right end *)
 

@@ -450,7 +450,6 @@ Class Lt_strict_total_order `{Lt A} : Prop :=
 
 (** Notation *)
 
-Declare Scope comp_scope.
 
 Notation "x <= y" := (le x y)
   (at level 70, no associativity) : comp_scope.
@@ -1087,7 +1086,6 @@ Open Scope comp_scope.
 (** Additional notation for reflected boolean comparison.
     Use [Open Scope comp_scope_reflect] to use them. *)
 
-Declare Scope comp_scope_reflect.
 
 Notation "x ''<=' y" := (isTrue (@le _ _ x y))
   (at level 70, no associativity) : comp_scope_reflect.

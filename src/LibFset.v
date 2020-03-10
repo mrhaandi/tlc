@@ -52,7 +52,6 @@ Arguments empty {A}.
 
 (** Notations *)
 
-Declare Scope fset_scope.
 
 Notation "\{}" := (empty) : fset_scope.
 
@@ -200,7 +199,6 @@ Arguments empty {A}.
 
 (** Notations *)
 
-Declare Scope fset_scope.
 
 Notation "\{}" := (empty) : fset_scope.
 

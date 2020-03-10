@@ -42,7 +42,6 @@ Definition notin `{BagIn A T} x m :=
 (* ---------------------------------------------------------------------- *)
 (** ** Notation *)
 
-Declare Scope container_scope.
 
 Notation "\{}" := (empty)
   : container_scope.

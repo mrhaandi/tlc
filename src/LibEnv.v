@@ -169,7 +169,6 @@ End EnvOps.
 (* ---------------------------------------------------------------------- *)
 (** ** Notations *)
 
-Declare Scope env_scope.
 
 (** [x ~ a] is the notation for a singleton environment mapping x to a. *)
 

@@ -46,7 +46,6 @@ Set Implicit Arguments.
 
 Require Import Coq.Lists.List.
 
-Declare Scope ltac_scope.
 
 
 (* ********************************************************************** *)
@@ -5098,7 +5097,6 @@ Notation "'exists' x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 ',' P" :=
 
 (** Definition of ['let] *)
 
-Declare Scope let_scope.
 
 Definition let_binding (A B:Type) (v:A) (K:A->B) := K v.
 

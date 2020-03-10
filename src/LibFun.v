@@ -54,7 +54,6 @@ Definition apply_to (A : Type) (x : A) (B : Type) (f : A -> B) :=
 Definition compose {A B C} (g : B -> C) (f : A -> B) :=
   fun x => g (f x).
 
-Declare Scope fun_scope.
 
 Notation "f1 \o f2" := (compose f1 f2)
   (at level 49, right associativity) : fun_scope.
