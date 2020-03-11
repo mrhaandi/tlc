@@ -1602,8 +1602,10 @@ Tactic Notation "equates" constr(n1) constr(n2) constr(n3) constr(n4) :=
   equates (>> n1 n2 n3 n4).
 
 (** [applys_eq H i1 .. iK] is the same as
-    [equates i1 .. iK] followed by [apply H]
-    on the first subgoal. *)
+    [equates i1 .. iK] followed by [applys H]
+    on the first subgoal.
+
+    DEPRECATED: use [applys_eq H] instead. *)
 
 Tactic Notation "applys_eq" constr(H) constr(E) :=
   equates_several E ltac:(fun _ => sapply H).
@@ -1613,6 +1615,47 @@ Tactic Notation "applys_eq" constr(H) constr(n1) constr(n2) constr(n3) :=
   applys_eq H (>> n1 n2 n3).
 Tactic Notation "applys_eq" constr(H) constr(n1) constr(n2) constr(n3) constr(n4) :=
   applys_eq H (>> n1 n2 n3 n4).
+
+(** [applys_eq H] helps proving a goal of the form [P x1 .. xN]
+    from an hypothesis [H] that concludes [P y1 .. yN], where the
+    arguments [xi] and [yi] may or may not be convertible.
+    Equalities are produced for all arguments that don't unify.
+
+    The tactic invokes [equates] on all arguments, then calls
+    [applys K], and attempts [reflexivity] on the side equalities. *)
+
+Lemma applys_eq_init : forall (P Q:Prop),
+  P = Q ->
+  Q ->
+  P.
+Proof using. intros. subst. auto. Qed.
+
+Lemma applys_eq_step_dep : forall B (P Q: (forall A, A->B)) (T:Type),
+  P = Q ->
+  P T = Q T.
+Proof using. intros. subst. auto. Qed.
+
+Lemma applys_eq_step : forall A B (P Q:A->B) x y,
+  P = Q ->
+  x = y ->
+  P x = Q y.
+Proof using. intros. subst. auto. Qed.
+
+Ltac applys_eq_loop tt :=
+  match goal with
+  | |- ?P ?x =>
+      first [ eapply applys_eq_step; [ applys_eq_loop tt | ]
+            | eapply applys_eq_step_dep; applys_eq_loop tt ]
+  | _ => reflexivity
+  end.
+
+Ltac applys_eq_core H :=
+  eapply applys_eq_init;
+  [ applys_eq_loop tt | applys H ];
+  try reflexivity.
+
+Tactic Notation "applys_eq" constr(H) :=
+  applys_eq_core H.
 
 
 (* ---------------------------------------------------------------------- *)
@@ -3810,6 +3853,8 @@ Tactic Notation "equates" "~" constr(n1) constr(n2) constr(n3) :=
 Tactic Notation "equates" "~" constr(n1) constr(n2) constr(n3) constr(n4) :=
   equates n1 n2 n3 n4; auto_tilde.
 
+Tactic Notation "applys_eq" "~" constr(H) :=
+  applys_eq H; auto_tilde.
 Tactic Notation "applys_eq" "~" constr(H) constr(E) :=
   applys_eq H E; auto_tilde.
 Tactic Notation "applys_eq" "~" constr(H) constr(n1) constr(n2) :=
@@ -4203,6 +4248,8 @@ Tactic Notation "equates" "*" constr(n1) constr(n2) constr(n3) :=
 Tactic Notation "equates" "*" constr(n1) constr(n2) constr(n3) constr(n4) :=
   equates n1 n2 n3 n4; auto_star.
 
+Tactic Notation "applys_eq" "*" constr(H) :=
+  applys_eq H; auto_star.
 Tactic Notation "applys_eq" "*" constr(H) constr(E) :=
   applys_eq H E; auto_star.
 Tactic Notation "applys_eq" "*" constr(H) constr(n1) constr(n2) :=
