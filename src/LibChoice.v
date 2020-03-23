@@ -24,7 +24,7 @@ Generalizable Variables A B.
     every input to at least one output. *)
 
 Lemma functional_choice : forall A B (R:A->B->Prop),
-  (forall x, exists y, R x y) -> 
+  (forall x, exists y, R x y) ->
   (exists f, forall x, R x (f x)).
 Proof using.
   intros. exists (fun x => sig_val (indefinite_description (H x))).

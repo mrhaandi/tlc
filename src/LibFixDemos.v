@@ -366,7 +366,7 @@ Proof using.
 Qed.
 
 Lemma div_spec : forall n m q r,
-  n >= 0 -> 
+  n >= 0 ->
   m > 0 ->
   (q,r) = div n m ->
   n = q*m + r /\ r < m.
@@ -375,7 +375,7 @@ Proof using.
   rewrite* fix_div in Eq. unfolds Div. case_if.
   { inverts* Eq. }
   { gen Eq. case_eq (div (n-m) m) ;=> q' r' E Eq. inverts Eq.
-    symmetry in E. forwards* (Hq',Hr'): IH E. { hnfs*. } 
+    symmetry in E. forwards* (Hq',Hr'): IH E. { hnfs*. }
     { rewrite* Z.mul_add_distr_r. } }
 Qed.
 

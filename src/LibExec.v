@@ -449,7 +449,7 @@ Open Scope comp_scope.
 
 
 Lemma eqb_eq : forall A (x y:A),
-  x = y -> 
+  x = y ->
   (x '= y) = true.
 Proof using. intros. subst. apply~ isTrue_true. Qed.
 
@@ -458,12 +458,12 @@ Lemma eqb_self : forall A (x:A),
 Proof using. intros. apply~ eqb_eq. Qed.
 
 Lemma eqb_neq : forall A (x y:A),
-  x <> y -> 
+  x <> y ->
   (x '= y) = false.
 Proof using. intros. subst. apply~ isTrue_false. Qed.
 
 Lemma neqb_eq : forall A (x y:A),
-  x = y -> 
+  x = y ->
   (x '<> y) = false.
 Proof using. intros. subst. rewrite~ isTrue_false. Qed.
 

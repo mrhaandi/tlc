@@ -602,7 +602,7 @@ Hint Rewrite plus_nat_eq_plus_int : rew_maths.
 (* ---------------------------------------------------------------------- *)
 (** ** Properties of comparison *)
 
-Lemma antisym_le_int : 
+Lemma antisym_le_int :
   antisym (le (A:=int)).
 Proof using. intros x y L1 L2. math. Qed.
 

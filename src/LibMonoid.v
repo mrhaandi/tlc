@@ -1,5 +1,5 @@
 (** DISCLAIMER: the current presentation of monoids uses typeclasses,
-    but in fact it's not obvious that typeclasses are needed/useful here. 
+    but in fact it's not obvious that typeclasses are needed/useful here.
     Indeed, there is no overloading involved.
     Thus, the interface might change in the near future. *)
 
@@ -26,7 +26,7 @@ Record monoid_op (A:Type) : Type := monoid_make {
    monoid_oper : A -> A -> A;
    monoid_neutral : A }.
 
-(** Monoid properties 
+(** Monoid properties
     Note that field names are suffixed by [_prop] because the corresponding
     properties are also available through typeclass instances. *)
 (* -- LATER: factorize [let (o,n) := m] for the record definition *)
