@@ -143,7 +143,7 @@ endif
 	@chmod +x .coqide
 
 ide: _CoqProject
-	$(COQIDE) $(COQINCLUDE)
+	$(COQIDE) $(COQINCLUDE) $(COQPROJECTEXTRA) 
 
 
 ############################################################################

@@ -71,6 +71,20 @@ Definition fold_impl A B C (m:monoid_op C) (f:A->B->C) (M:map A B) :=
   LibContainer.fold m (fun p => let '(a,b) := p in f a b)
     (\set{ p | exists k x, p = (k, x) /\ binds_impl M k x }).
 
+(* LATER: a typeclass for filter? *)
+Definition filter A B (F:A->B->Prop) (f:map A B) : map A B :=
+  fun (x:A) => match f x with
+    | None => None
+    | Some y => If F x y then Some y else None
+    end.
+
+(* LATER: a typeclass for map? *)
+Definition map_ A B1 B2 (F:A->B1->B2) (f:map A B1) : map A B2 :=
+  fun (x:A) => match f x with
+    | None => None
+    | Some y => Some (F x y)
+    end.
+
 
 (* ---------------------------------------------------------------------- *)
 (** ** Notation through typeclasses *)
@@ -204,7 +218,25 @@ Hint Extern 1 (None <> Some _) => congruence.
 (* ---------------------------------------------------------------------- *)
 (** extens *)
 
-(* --LATER: state some extensionality *)
+Lemma extensionality : forall A B (IB:Inhab B) (M1 M2:map A B),
+  (forall (k:A), k \indom M1 <-> k \indom M2) ->
+  (forall (k:A), k \indom M1 -> M1[k] = M2[k]) ->
+  M1 = M2.
+Proof using.
+  introv HD HE. extens. intros k.
+  specializes HD k. specializes HE k. 
+  unfold dom_inst, dom_impl, read_inst, read_impl in *. simpls.
+  repeat rewrite in_set_st_eq in *.
+  case_eq (M1 k); introv Hv1; rewrite Hv1 in HE,HD;
+  case_eq (M2 k); introv Hv2; try rewrite Hv2 in HE,HD.
+  { forwards* ->: HE. }
+  { false. forwards: (proj1 HD); auto_false. }
+  { false. forwards: (proj2 HD); auto_false. }
+  { auto. }
+Qed.
+
+(* See also sections "prove same" and "prove empty" *)
+
 
 (* ---------------------------------------------------------------------- *)
 (** index *)
@@ -213,7 +245,6 @@ Lemma index_of_indom : forall A B (M:map A B) k,
   k \indom M ->
   index M k.
 Proof using. intros. rewrite~ index_eq_indom. Qed.
-
 
 (* ---------------------------------------------------------------------- *)
 (** dom *)
@@ -245,22 +276,36 @@ Qed.
 (* ---------------------------------------------------------------------- *)
 (** indom *)
 
+Lemma indom_empty_eq : forall A B x,
+  x \indom (\{}:map A B) = False.
+Proof using.
+  intros. rewrite dom_empty. rewrite in_empty_eq. auto.
+Qed.
+
 Lemma indom_empty_inv : forall A B (x:A),
   x \indom (\{} : map A B) ->
   False.
 Proof using.
-  introv M. rewrite dom_empty in *. applys @in_empty M; typeclass.
+  introv M. rewrite indom_empty_eq in M. auto.
 Qed.
 
-(* TODO CLEAN UP after migration *)
-  (* old proof:
-  intros. rewrite dom_empty in *. eapply in_empty; typeclasses eauto with typeclass_instances. *)
-  (* new proof:
-  introv M. rewrite dom_empty in *. eapply @in_empty. 2: eapply M. typeclasses eauto with typeclass_instances. *)
+Lemma indom_single_eq : forall A B (x1 x2:A) (v:B),
+  x2 \indom (x1\:=v) = (x1 = x2).
+Proof using.
+  intros. rewrite dom_single. rewrite in_single_eq. extens*.
+Qed.
+
+Lemma indom_union_eq : forall A B (IB:Inhab B) (M1 M2:map A B) x,
+  x \indom (union M1 M2) = (x \indom M1 \/ x \indom M2).
+Proof using.
+  intros. rewrite dom_union. rewrite in_union_eq. auto.
+Qed.
 
 
 (* ---------------------------------------------------------------------- *)
 (** prove empty *)
+
+(* TODO: factorize these proofs *)
 
 Lemma eq_empty_of_not_binds : forall (A B : Type) (M : map A B),
   (forall x k, ~ binds M x k) ->
@@ -278,6 +323,54 @@ Proof using.
   extens ;=> k. absurds ;=> G.
   lets R: @is_empty_inv k H. typeclass.
   false R. rewrite~ in_set_st_eq.
+Qed.
+
+Lemma eq_empty_of_not_indom : forall A B (IB:Inhab B) (M:map A B),
+  (forall x, ~ x \indom M) ->
+  M = \{}.
+Proof using.
+  introv IB H. applys extensionality.
+  { intros x. rewrite indom_empty_eq. iff*. }
+  { intros x Dx. false* H. }
+Qed.
+
+(* ---------------------------------------------------------------------- *)
+(** disjoint *)
+
+Lemma disjoint_eq_not_indom_both : forall A B (M1 M2:map A B),
+  disjoint M1 M2 = (forall k, k \indom M1 -> k \indom M2 -> False).
+Proof using.
+  extens. unfold disjoint_impl. rewrite* set_disjoint_eq.
+Qed.
+
+Lemma disjoint_of_not_indom_both : forall A B (M1 M2:map A B),
+  (forall k, k \indom M1 -> k \indom M2 -> False) ->
+  disjoint M1 M2.
+Proof using. introv M. rewrite~ disjoint_eq_not_indom_both. Qed.
+
+Lemma disjoint_inv_not_indom_both : forall A B (M1 M2:map A B) k,
+  disjoint M1 M2 ->
+  k \indom M1 ->
+  k \indom M2 ->
+  False.
+Proof using. introv. rewrite* disjoint_eq_not_indom_both. Qed.
+
+Lemma disjoint_single_of_not_indom : forall A B (M:map A B) x (v:B),
+  ~ x \indom M ->
+  disjoint (x\:=v) M.
+Proof using.
+  introv N. unfold disjoint, disjoint_inst, disjoint_impl.
+  unfold single_bind, single_bind_inst, single_bind_impl, dom_impl.
+  rewrite set_disjoint_eq. intros x'.
+  repeat rewrite in_set_st_eq. case_if; subst; auto_false.
+Qed.
+
+Lemma not_indom_of_indom_disjoint : forall A B (M1 M2:map A B) x,
+  x \indom M1 ->
+  disjoint M1 M2 ->
+  ~ x \indom M2.
+Proof using.
+  introv H1 D H2. rewrite* disjoint_eq_not_indom_both in D.
 Qed.
 
 
@@ -373,6 +466,17 @@ Proof using.
   intros k. do 3 rewrite update_impl_eq. case_if~.
 Qed.
 
+(* update same *)
+
+Lemma update_same : forall A B (IA:Inhab B) (M:map A B) (x:A),
+  x \indom M ->
+  M[x:=M[x]] = M.
+Proof using.
+  introv Dx. applys extensionality.
+  { intros k. rewrite* dom_update_at_indom. }
+  { intros k Hk. rewrite* dom_update_at_indom in Hk.
+    rewrite read_update. case_if*. subst*. }
+Qed.
 
 (* ---------------------------------------------------------------------- *)
 (** binds *)
@@ -474,6 +578,18 @@ Proof using. introv H. rewrite~ binds_update_eq in H. Qed.
 (* ---------------------------------------------------------------------- *)
 (* union *)
 
+(* TODO: this is convenient, though it reveals non commutativity.
+   TODO: change the priority of the union: left argument should be read first *)
+
+Lemma read_union_cases : forall A B (IB:Inhab B) (M1 M2:map A B) x,
+  read (union M1 M2) x = (If x \indom M2 then M2[x] else M1[x]).
+Proof using.
+  intros. unfold read, read_inst, read_impl.
+  unfold dom, dom_inst, dom_impl. rewrite in_set_st_eq.
+  unfold union, union_inst, union_impl.
+  case_eq (M2 x); introv Hv2; case_if; congruence.
+Qed.
+
 Lemma union_read_l : forall A `{Inhab B} (m1 m2:map A B) (i:A),
   i \indom m1 ->
   dom m1 \# dom m2 ->
@@ -568,6 +684,118 @@ Proof using.
   rew_set in *. do 2 case_if~. subst. destruct (M x); auto_false.
 Qed.
 
+
+(* ---------------------------------------------------------------------- *)
+(** map *)
+
+(* TODO
+
+Axiom indom_map : forall A B (IB:Inhab B) C (f:A->B->C) M x,
+  indom (map_ f M) x = x \indom M.
+
+Axiom read_map : forall A B (IB:Inhab B) C (IB:Inhab C) (f:A->B->C) M x,
+  x \indom M ->
+  read (map_ f M) x = f x (read M x).
+
+Axiom map_empty : forall A B (IB:Inhab B) C (f:A->B->C),
+  map_ f (@Fmap.empty A B) = Fmap.empty.
+
+Axiom map_single : forall A B (IB:Inhab B) C (f:A->B->C) x y,
+  map_ f (single x y) = single x (f x y).
+
+Axiom map_union : forall A B (IB:Inhab B) C (f:A->B->C) M1 M2,
+  map_ f (union M1 M2) = union (map_ f M1) (map_ f M2).
+
+Axiom map_id : forall A B (IB:Inhab B) (f:A->B->B) M,
+  (forall x y, x \indom M -> y = read M x -> f x y = y) ->
+  map_ f M = M.
+(* Proof using. extensionality. Qed. *)
+
+Hint Rewrite indom_map map_empty map_single map_union : rew_fmap.
+
+*)
+
+(* ---------------------------------------------------------------------- *)
+(** filter *)
+
+(* TODO
+
+Axiom indom_filter_eq : forall A B (IB:Inhab B) (f:A->B->Prop) M x,
+  indom (Fmap.filter f M) x = (x \indom M /\ f x (read M x)).
+
+Axiom filter_swap : forall A B (IB:Inhab B) (f1 f2:A->B->Prop) M,
+  Fmap.filter f1 (Fmap.filter f2 M) = Fmap.filter f2 (Fmap.filter f1 M).
+
+Lemma filter_all : forall A B (IB:Inhab B) (f:A->B->Prop) M,
+  (forall x, x \indom M -> f x (Fmap.read M x)) ->
+  Fmap.filter f M = M.
+Admitted.
+
+Lemma filter_none : forall A B (IB:Inhab B) (f:A->B->Prop) M,
+  (forall x, x \indom M -> ~ f x (Fmap.read M x)) ->
+  Fmap.filter f M = Fmap.empty.
+Admitted.
+
+Lemma filter_read : forall A B (IB:Inhab B) (f:A->B->Prop) M x,
+  f x (Fmap.read M x) ->
+  Fmap.read (Fmap.filter f M) x = Fmap.read M x.
+Admitted.
+
+Lemma indom_filter_inv : forall A B (IB:Inhab B) (f:A->B->Prop) M x,
+  indom (Fmap.filter f M) x ->
+     x \indom M
+  /\ f x (read M x)
+  /\ read (Fmap.filter f M) x = read M x.
+Proof using.
+  introv D. erewrite indom_filter_eq in D. splits*. applys* filter_read.
+Qed.
+
+Lemma filter_empty: forall A B {IB:Inhab B} (f:A->B->Prop),
+  Fmap.filter f Fmap.empty = Fmap.empty.
+Proof using .
+  intros. applys filter_none. intros x K.
+  rewrite* indom_empty_eq in K.
+Qed.
+
+Lemma filter_single : forall A B (IB:Inhab B) (f:A->B->Prop) x y,
+    Fmap.filter f (Fmap.single x y)
+  = If f x y then (Fmap.single x y) else Fmap.empty.
+Proof using.
+  intros. case_if.
+  { applys filter_all. intros k K. rewrite indom_single_eq in K.
+    subst. rewrite* read_single. }
+  { applys filter_none. intros k K. rewrite indom_single_eq in K.
+    subst. rewrite* read_single. }
+Qed.
+
+Axiom filter_union : forall A B (IB:Inhab B) (f:A->B->Prop) M1 M2,
+  Fmap.filter f (Fmap.union M1 M2) = Fmap.union (Fmap.filter f M1) (Fmap.filter f M2).
+
+Axiom filter_partition : forall A B (IB:Inhab B) (f1 f2:A->B->Prop) M M1 M2,
+  (forall x y, x \indom M -> y = Fmap.read M x -> f1 x y -> f2 x y -> False) ->
+  M1 = Fmap.filter f1 M ->
+  M2 = Fmap.filter f2 M ->
+  M = Fmap.union M1 M2 /\ Fmap.disjoint M1 M2.
+
+Axiom filter_idempotent : forall A B (IB:Inhab B) (f:A->B->Prop) M,
+  Fmap.filter f (Fmap.filter f M) = Fmap.filter f M.
+
+  (* todo: provable by extensionality, but simpler direct proof. *)
+(*  intros. applys extensionality.
+  { intros. repeat erewrite indom_filter_eq. split. } *)
+
+Lemma filter_incompatible : forall A B (IB:Inhab B) (f1 f2:A->B->Prop) M,
+  (forall x y, x \indom M -> y = Fmap.read M x -> f1 x y -> f2 x y -> False) ->
+  Fmap.filter f1 (Fmap.filter f2 M) = Fmap.empty.
+Proof using.
+  introv M. applys* indom_empty_iff_empty.
+  intros x K. do 2 erewrite indom_filter_eq in K.
+  destruct K as ((Ix&K1)&K2). rewrite* filter_read in K2.
+Qed.
+
+Hint Rewrite filter_empty filter_single filter_union : rew_map.
+
+*)
 
 (* ---------------------------------------------------------------------- *)
 (** structural decomposition *)
