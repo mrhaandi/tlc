@@ -1,6 +1,6 @@
 Set Implicit Arguments.
 From TLC Require Import LibTactics LibList.
-From Coq Require Import ZArith Even.
+From Coq Require Import ZArith Even micromega.Lia.
 
 Declare Scope maths_scope.
 Open Scope maths_scope.
@@ -13,7 +13,7 @@ Open Scope maths_scope.
 (* ---------------------------------------------------------------------- *)
 (** Constrained quantification *)
 
-(** "Let [L] be a list of natural numbers" 
+(** "Let [L] be a list of natural numbers"
     is naturally translated as a quantification over a value of type [list nat]. *)
 
 Definition example_list_nat :=
@@ -36,7 +36,7 @@ Definition example_list_pos_nat :=
     for nonnegative numbers, and quantify over [L : list natpos]. *)
 
 (** "Let [L] be a list of natural numbers whose length is between 5 and 7"
-    is, again, naturally translated as a quantification over a value of type 
+    is, again, naturally translated as a quantification over a value of type
     [list nat], with an additional constraint on the list. *)
 
 Definition example_list_nat_bounded :=
@@ -51,7 +51,7 @@ Definition example_list_nat_exact :=
 (** In other words, there is no reason to come up with a new dependent type
     [list n nat] for lists of [n] values of type [nat]. *)
 
-(** "Let [n] be a list of length [5]" 
+(** "Let [n] be a list of length [5]"
     involves an implicit quantification over the type of the list.
     If we are explicit, in type theory, we would write: *)
 
@@ -86,11 +86,11 @@ Parameter mem : forall A, A -> set A -> Prop.
  (* e.g. [fun x E => E x] *)
 Parameter finite : forall A, set A -> Prop.
  (* e.g., defined in terms of a list enumeration of the elements *)
-Parameter card : forall A, set A -> nat. 
+Parameter card : forall A, set A -> nat.
  (* e.g., defined using [epsilon], and returning arbitrary values for nonfinite sets;
    it is not the more general function with meaningful return values for infinite sets *)
 
-Parameter mem_set_st_eq : forall A (P:A->Prop) (x:A), 
+Parameter mem_set_st_eq : forall A (P:A->Prop) (x:A),
   (mem x (set_st P)) = (P x).
 
 (** Let us introduce two notations (not overloaded, for simplicity)
@@ -153,7 +153,7 @@ Definition example_set_finite :=
 ]]
 *)
 
-(** "Let [E] be a set of natural numbers such that, for any element 
+(** "Let [E] be a set of natural numbers such that, for any element
     [x] in [E], the number [x] is even." *)
 
 Definition example_set_even :=
@@ -163,8 +163,8 @@ Definition example_set_even :=
 (**************************************************************************)
 (** * Mathematical functions *)
 
-(** "A function [f] from [E] to [F], written [E -> F], maps elements from the set [E] 
-    into the set [F]." 
+(** "A function [f] from [E] to [F], written [E -> F], maps elements from the set [E]
+    into the set [F]."
     We can translate this in type theory as follows. *)
 
 Definition function (A B:Type) (E:set A) (F:set B) (f:A->B) : Prop :=
@@ -180,10 +180,10 @@ Definition set_op (A:Type) (E:set A) (f:A->A->A) : Prop :=
 
 (** Properties of binary operators over sets *)
 
-Definition comm (A:Type) (E:set A) (f:A->A->A) : Prop := 
+Definition comm (A:Type) (E:set A) (f:A->A->A) : Prop :=
   forall_ x y \in E, f x y = f y x.
 
-Definition assoc (A:Type) (E:set A) (f:A->A->A) : Prop := 
+Definition assoc (A:Type) (E:set A) (f:A->A->A) : Prop :=
   forall_ x y z \in E, f x (f y z) = f (f x y) z.
 
 Definition neutral_l (A:Type) (E:set A) (f:A->A->A) (e:A) : Prop :=
@@ -214,7 +214,7 @@ Definition neutral_lr (A:Type) (E:set A) (f:A->A->A) (e:A) :=
 
     We could attempt to formalize this directly as a predicate
     [monoid S id op]. But instead of carrying [S], [id] and [op] as three
-    separate components everywhere, let us first introduce a type for the 
+    separate components everywhere, let us first introduce a type for the
     set equipped with its identity element and its binary operation. *)
 
 Record monoid_str (A:Type) : Type := monoid_ {
@@ -244,7 +244,7 @@ Record comm_monoid (A:Type) (M:monoid_str A) : Type := comm_monoid_make {
 
 Definition example_comm_monoid :=
   forall (A : Type) (M : monoid_str A), comm_monoid M ->
-  let (E,id,op) := M in 
+  let (E,id,op) := M in
   op id id = id.
 
 (** See further on for the version with notation:
@@ -297,7 +297,7 @@ Hint Resolve neutral_l_of_monoid.
 
 (** A demo of exploiting backward lemmas appear further on. *)
 
-(** Note that the forward application lemmas are easily derivable from backward 
+(** Note that the forward application lemmas are easily derivable from backward
     lemmas, and the other way around is also possible. For example: *)
 
 Lemma neutral_l_of_monoid' : forall (A : Type) (M : monoid_str A),
@@ -305,7 +305,7 @@ Lemma neutral_l_of_monoid' : forall (A : Type) (M : monoid_str A),
   neutral_l (monoid_set M) (monoid_op M) (monoid_id M).
 Proof using. introv HM. applys* neutral_l_of_monoid. Qed.
 
-(** All we need is some tooling for generating one of the two versions, 
+(** All we need is some tooling for generating one of the two versions,
     because we certainly don't want to write two versions of each lemma
     by hand. *)
 
@@ -334,10 +334,10 @@ Coercion Monoid_of_monoid (A:Type) (M:Monoid_str A) : monoid_str A :=
 
 (** Properties for full operators *)
 
-Definition Comm (A:Type) (f:A->A->A) : Prop := 
+Definition Comm (A:Type) (f:A->A->A) : Prop :=
   forall x y, f x y = f y x.
 
-Definition Assoc (A:Type) (f:A->A->A) : Prop := 
+Definition Assoc (A:Type) (f:A->A->A) : Prop :=
   forall x y z, f x (f y z) = f (f x y) z.
 
 Definition Neutral_l (A:Type) (f:A->A->A) (e:A) : Prop :=
@@ -369,7 +369,7 @@ Lemma comm_Monoid : forall (A:Type) (op : A->A->A) (id:A),
   Comm op ->
   comm_monoid M.
 Proof using.
-  introv HM HC. constructor. { auto. } 
+  introv HM HC. constructor. { auto. }
   { simpls. intros_all. rewrite* HC. }
 Qed.
 
@@ -379,8 +379,8 @@ Lemma example_Monoid_Z :
   comm_monoid (Monoid_ 0%Z Z.add).
 Proof using.
   apply comm_Monoid.
-  { apply Monoid; try split; intros_all; try omega. }
-  { intros_all; try omega. }
+  { apply Monoid; try split; intros_all; try lia. }
+  { intros_all; try lia. }
 Qed.
 
 (** Extract properties from a full Monoid, backward search of the monoid *)
@@ -416,7 +416,7 @@ Lemma Assoc_of_Monoid' : forall (A : Type) (M : Monoid_str A),
   Assoc (monoid_op M).
 Proof using. introv HM. applys* Assoc_of_Monoid. Qed.
 
-(** Demo: exploiting associativity of [Z.add], by triggering  
+(** Demo: exploiting associativity of [Z.add], by triggering
     the search of the monoid [example_Monoid_Z], added as hint. *)
 
 Hint Resolve example_Monoid_Z.
@@ -444,7 +444,7 @@ Qed.
 (** This example shows that we can mimic the mathematical writing of
     "by associativity of Z.add", through the tactic step [rew (Assoc Z.add)].
     We state the property needed, without expliciting where it comes from,
-    because this information is easy to synthesize. At the same time, 
+    because this information is easy to synthesize. At the same time,
     observe that the information is not embedded with the operation [Z.add],
     it comes as an proof. This allows us to work directly with the core
     operations, without requiring complex wrappers around them. *)
@@ -457,7 +457,7 @@ Qed.
     from statements on monoids, simply by specializing the set to [set_full],
     and simplifying away hypotheses that are equivalent to [True]. *)
 
-(** Reciprocally, given a monoid with elements of type [A] from a set [E], 
+(** Reciprocally, given a monoid with elements of type [A] from a set [E],
     we can define a [Monoid] over the [Type] that consists of only values
     that belong to the set [E]. Then, we can lift results that are proved
     for monoids over full types into results that hold for all monoids. *)
@@ -467,7 +467,7 @@ Qed.
 
 (** [typ E] denotes a [Type] made of the set values that belong to the set [E] *)
 
-Definition typ (A:Type) (E:set A) : Type := 
+Definition typ (A:Type) (E:set A) : Type :=
   { x : A | x \in E }.
 
 (** [typ_elem] converts an element form a set [E] into a value of type [typ E] *)
@@ -475,10 +475,10 @@ Definition typ (A:Type) (E:set A) : Type :=
 Program Definition typ_elem (A:Type) (E:set A) (x : A) (H : x \in E) : typ E :=
   exist _ x _.
 
-(** [typ_op] converts a binary operation [A -> A -> A] that is internal to [E] 
+(** [typ_op] converts a binary operation [A -> A -> A] that is internal to [E]
     into a function of type [typ E -> typ E -> typ E]. *)
 
-Program Definition typ_op (A:Type) (E:set A) (f : A -> A -> A) (H : set_op E f) 
+Program Definition typ_op (A:Type) (E:set A) (f : A -> A -> A) (H : set_op E f)
                             : (typ E -> typ E -> typ E) :=
   (* intros [x Hx] [y Hy]. econstructor. apply (H x y Hx Hy). Defined. *)
   fun a b =>
@@ -506,7 +506,7 @@ Proof using.
   { intros_all. rewrite* mem_set_st_eq. }
   { intros [x Ex] [y Ey] [z Ez] Hx Hy Hz. simpls.
     apply LibEqual.exist_eq_exist. rewrite* HC. }
-  { split. 
+  { split.
     { intros [x Ex] Hx. simpls. apply LibEqual.exist_eq_exist. rewrite* HD1. }
     { intros [x Ex] Hx. simpls. apply LibEqual.exist_eq_exist. rewrite* HD2. } }
 Qed.
@@ -517,7 +517,7 @@ Lemma comm_monoid_typ_monoid : forall (A:Type) (M:monoid_str A) (H : comm_monoid
   comm_monoid (typ_monoid (comm_monoid_monoid H)).
 Proof using.
   intros A M [HM HC]. constructor; simpls.
-  { applys monoid_typ_monoid. } 
+  { applys monoid_typ_monoid. }
   { destruct M as [E op id]. destruct HM as [? ? ? ?]. intros [x Ex] [y Ey] _ _. simpls.
     apply LibEqual.exist_eq_exist. rewrite* HC. }
 Qed.
@@ -526,7 +526,7 @@ Qed.
     can be translated into a lemma about all monoids. Consider the example
     of the combined commutativity-associativity property, written [Comm_Assoc]. *)
 
-Definition Comm_Assoc (A:Type) (f:A->A->A) : Prop := 
+Definition Comm_Assoc (A:Type) (f:A->A->A) : Prop :=
   forall x y z, f x (f y z) = f z (f x y).
 
 (** This property [Comm_Assoc] can be derived from commutativity and associativity. *)
@@ -544,7 +544,7 @@ Qed.
 Lemma Comm_Assoc_of_comm_Monoid : forall (A : Type) (op : A->A->A) (id:A),
   comm_monoid (Monoid_ id op) ->
   Comm_Assoc op.
-Proof using. 
+Proof using.
   introv HM. applys Comm_Assoc_of_Comm_and_Assoc.
   { applys* Comm_of_comm_Monoid. }
   { applys* Assoc_of_Monoid. }
@@ -560,7 +560,7 @@ Proof using. introv HM. applys* Comm_Assoc_of_comm_Monoid. Qed.
 
 (** Consider now the combined commutativity-associativity over a set [E]. *)
 
-Definition comm_assoc (A:Type) (E:set A) (f:A->A->A) : Prop := 
+Definition comm_assoc (A:Type) (E:set A) (f:A->A->A) : Prop :=
   forall_ x y z \in E, f x (f y z) = f z (f x y).
 
 (** The property [comm_assoc E f] is derivable from [Comm_Assoc] over the
@@ -570,11 +570,11 @@ Lemma comm_assoc_of_Comm_Assoc : forall (A:Type) (E:set A) (f:A->A->A) (H : set_
   Comm_Assoc (typ_op H) ->
   comm_assoc E f.
 Proof using.
-  introv HCA. intros x y z Hx Hy Hz. 
+  introv HCA. intros x y z Hx Hy Hz.
   lets EQ: HCA (typ_elem Hx) (typ_elem Hy) (typ_elem Hz). inverts EQ. auto.
 Qed.
 
-(** We can thus derive from the lemma [Comm_Assoc_of_comm_Monoid] the fact that 
+(** We can thus derive from the lemma [Comm_Assoc_of_comm_Monoid] the fact that
     [comm_assoc] holds in any commutative [monoid] over a set [E].
     The idea is to exploit the result for [Monoid] on the full type [typ E].
     My proof is a bit tedious at the moment, but I'm pretty sure it could be simplified. *)
@@ -583,10 +583,10 @@ Lemma Comm_assoc_of_comm_monoid' : forall (A : Type) (M : monoid_str A),
   comm_monoid M ->
   comm_assoc (monoid_set M) (monoid_op M).
 Proof using.
-  introv HM. lets HM':HM. 
+  introv HM. lets HM':HM.
   lets R: (comm_monoid_typ_monoid HM).
   destruct HM as [HR HCO].
-  destruct HR as [HA HB HC HD]. 
+  destruct HR as [HA HB HC HD].
   destruct M as [E id op]. simpls.
   eapply (@comm_assoc_of_Comm_Assoc _ _ _ HB).
   eapply Comm_Assoc_of_comm_Monoid. applys R.
@@ -600,8 +600,8 @@ Lemma comm_assoc_of_comm_Monoid : forall (A : Type) (E : set A) (op : A->A->A) (
 Proof using. introv HM. apply (Comm_assoc_of_comm_monoid' HM). Qed.
 
 (** The full construction is a bit tedious to carry out by hand, but I guess it
-    could be simplified, or even possibly automated with tool support. 
-    
+    could be simplified, or even possibly automated with tool support.
+
     In summary, the idea is that you can do complex proofs using [Monoid],
     using simple definitions for [Assoc], etc (not constrainted by a set [E]),
     then you can automatically export results on all [monoid]s. *)
@@ -612,7 +612,7 @@ Proof using. introv HM. apply (Comm_assoc_of_comm_monoid' HM). Qed.
 
 (** I would like Coq to benefit from ADA and PVS style resolution of overloading.
 
-    In those systems, resolution is directed both by the type of function arguments 
+    In those systems, resolution is directed both by the type of function arguments
     and the type expected by the context, using a two-pass typing algorithm
     (bottom-up, then top-down). I will soon work on extending the
     algorithm form ADA and PVS to support polymorphism.
@@ -622,7 +622,7 @@ Proof using. introv HM. apply (Comm_assoc_of_comm_monoid' HM). Qed.
     - immediate call to "simpl" to remove the typeclass indirection
     - use of printing-only notation for printing the overloaded symbols. *)
 
-Class Plus (A B C:Type) : Type := 
+Class Plus (A B C:Type) : Type :=
   { plus : A -> B -> C }.
 
 Instance Plus_nat : Plus nat nat nat.
@@ -631,7 +631,7 @@ Proof using. constructor. apply Nat.add. Defined.
 Instance Plus_Z : Plus Z Z Z.
 Proof using. constructor. apply Z.add. Defined.
 
-Class Zero (A:Type) : Type := 
+Class Zero (A:Type) : Type :=
   { zero : A }.
 
 Instance Zero_nat : Zero nat.
@@ -659,7 +659,7 @@ Notation "n '+ m" := (Z.add n m) (at level 40, only printing) : maths_scope.
 
 (** Example *)
 
-Lemma test_plus : forall (a b : nat) (c d : Z), 
+Lemma test_plus : forall (a b : nat) (c d : Z),
  c '+ d '+ '0 = Z.of_nat (a '+ b '+ '0).
 Proof using.
   over. intros.
@@ -692,7 +692,7 @@ Notation "n '+ m" := (monoid_op _ n m) (at level 40, only printing) : additive_m
 Notation "n '+ m" := (Monoid_op _ n m) (at level 40, only printing) : additive_monoid_scope.
 
 
-(** "Let M(E,+,0) be a commutative monoid. 
+(** "Let M(E,+,0) be a commutative monoid.
     For any [x] in [E], we have ['0 '+ x = x]."
     This statement is translated as follows. *)
 
@@ -710,7 +710,7 @@ Proof using.
   { eauto. } (* solves [x = x]. *)
 Qed.
 
-(** "Let M(+,0) be a commutative monoid over a full type [A] 
+(** "Let M(+,0) be a commutative monoid over a full type [A]
     For any [x] of type [A], we have ['0 '+ x = x]."
     This statement is translated as follows. *)
 
@@ -719,7 +719,7 @@ Lemma example_comm_Monoid_notations :
   let '(_,_) := ZeroPlus_of_Monoid M in
   forall x,
   '0 '+ x = x.
-Proof using. 
+Proof using.
   over. introv HM. intros x.
  (* prints as [x '+ '0 = x] *)
  (* stands for [monoid_op M x (monoid_id M) = x] *)
